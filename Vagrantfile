@@ -2,14 +2,6 @@
 # vi: set ft=ruby :
 
 $install_tools = <<SCRIPT
-echo "$(echo 'GATEWAY=192.168.1.1' | cat - /etc/sysconfig/network)" > /etc/sysconfig/network
-mv /etc/resolv.conf /etc/resolv.conf.old
-touch /etc/resolv.conf
-echo "193.231.252.1" >> /etc/resolv.conf
-echo "213.154.124.1" >> /etc/resolv.conf
-echo "8.8.8.8" >> /etc/resolv.conf
-service network restart
-ADDRIP=$(ifconfig eth1 | cut -d" " -f 12 | grep addr | cut -d":" -f2)
 #yum -y update
 yum -y install vim zip unzip mc
 yum -y install squid
@@ -17,7 +9,7 @@ echo "$(echo 'acl client src '$ADDRIP)" >> /etc/squid/squid.conf
 echo 0 */1 * * * service squid reload >> /var/spool/cron/root
 service squid start
 echo "=============================="
-echo $ADDRIP
+echo 'Done'
 echo "=============================="
 SCRIPT
 
@@ -28,7 +20,8 @@ Vagrant.configure("2") do |config|
     proxyVM.vm.hostname= "proxyVM"
     proxyVM.vm.provision :shell, :inline => $install_tools
     proxyVM.vm.synced_folder ".", "/vagrant", disabled: true
-    proxyVM.vm.network :public_network, bridge: "Local Area Connection"
+    proxyVM.vm.network "forwarded_port", guest: 22, host: 2022, id: "ssh", auto_correct: true
+	proxyVM.vm.network "forwarded_port", guest: 3128, host: 31280, id: "proxy"
     proxyVM.vm.provider "virtualbox" do |vm|
        vm.name = "proxyVM"
        vm.customize [
